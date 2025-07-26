@@ -1,12 +1,12 @@
 import os
-import argparse
 import glob
 import cv2
+import yaml
+import argparse
 import numpy as np
 import torch
 import face_alignment
 import ffmpeg
-import yaml
 from tqdm import tqdm
 from scipy.signal import savgol_filter
 
@@ -37,7 +37,7 @@ def process_videos(config):
     Writes to the final aligned directory.
     """
     raw_frames_base_dir = config['path']['raw_frames_path']
-    aligned_output_base_dir = config['path']['aligned_path']
+    final_output_base_dir = config['path']['preprocessed_path']
     original_grid_dir = config['path']['corpus_path']
     device = config['preprocessing']['device']
     
@@ -45,9 +45,12 @@ def process_videos(config):
     fa = face_alignment.FaceAlignment(face_alignment.LandmarksType.L2D, device=device, flip_input=False)
 
     speaker_dirs = sorted(glob.glob(os.path.join(raw_frames_base_dir, "s*")))
+    if not speaker_dirs:
+        print(f"Error: No speaker directories found in {raw_frames_base_dir}. Please run the first script.")
+        return
     print(f"Found {len(speaker_dirs)} speaker directories in the raw frames folder.")
 
-    for speaker_dir in tqdm(speaker_dirs, desc="Processing Speakers"):
+    for speaker_dir in tqdm(speaker_dirs, desc="Finalizing Speakers"):
         video_dirs = sorted(glob.glob(os.path.join(speaker_dir, "*")))
         
         for video_frame_dir in tqdm(video_dirs, desc=f"Videos for {os.path.basename(speaker_dir)}", leave=False):
@@ -56,20 +59,19 @@ def process_videos(config):
                 speaker_id = os.path.basename(os.path.dirname(video_frame_dir))
 
                 # --- 1. Define Output Paths ---
-                aligned_video_dir = os.path.join(aligned_output_base_dir, speaker_id, video_id)
-                aligned_frames_dir = os.path.join(aligned_video_dir, 'frames')
-                audio_output_path = os.path.join(aligned_video_dir, 'audio.wav')
+                final_video_dir = os.path.join(final_output_base_dir, speaker_id, video_id)
+                final_frames_dir = os.path.join(final_video_dir, 'frames')
+                audio_output_path = os.path.join(final_video_dir, 'audio.wav')
 
-                # Skip if already fully processed
-                if os.path.exists(aligned_frames_dir) and os.path.exists(audio_output_path):
+                if os.path.exists(final_frames_dir) and os.path.exists(audio_output_path):
                     continue
                 
-                os.makedirs(aligned_frames_dir, exist_ok=True)
+                os.makedirs(final_frames_dir, exist_ok=True)
 
                 # --- 2. Find Original Video for Audio Extraction ---
                 original_video_path = os.path.join(original_grid_dir, speaker_id, "video", f"{video_id}.mpg")
                 if not os.path.exists(original_video_path):
-                    print(f"Warning: Original video not found at {original_video_path}. Skipping audio.")
+                    print(f"Warning: Original video not found at {original_video_path}. Skipping.")
                     continue
 
                 # --- 3. Extract Audio ---
@@ -81,8 +83,7 @@ def process_videos(config):
 
                 # --- 4. Load Raw Frames ---
                 frame_files = sorted(glob.glob(os.path.join(video_frame_dir, "*.jpg")))
-                if not frame_files:
-                    continue
+                if not frame_files: continue
                 
                 raw_frames = [cv2.cvtColor(cv2.imread(f), cv2.COLOR_BGR2RGB) for f in frame_files]
                 
@@ -99,11 +100,8 @@ def process_videos(config):
                     print(f"Warning: No faces detected in {video_frame_dir}. Skipping.")
                     continue
 
-                # Forward-fill for missing landmarks
                 for i in range(len(all_landmarks)):
-                    if all_landmarks[i] is None:
-                        all_landmarks[i] = all_landmarks[i-1] if i > 0 else None
-                # Backward-fill for any leading Nones
+                    if all_landmarks[i] is None: all_landmarks[i] = all_landmarks[i-1] if i > 0 else None
                 if all_landmarks[0] is None:
                     first_valid = next((item for item in all_landmarks if item is not None), None)
                     if first_valid is None: continue
@@ -118,36 +116,33 @@ def process_videos(config):
                 for i, (frame, landmarks) in enumerate(zip(raw_frames, smoothed_landmarks)):
                     min_xy = np.min(landmarks, axis=0)
                     max_xy = np.max(landmarks, axis=0)
-                    
                     center = (min_xy + max_xy) / 2
                     size = np.max(max_xy - min_xy) * config['preprocessing']['crop_scale']
-                    
                     half_size = size / 2
                     x1, y1 = int(center[0] - half_size), int(center[1] - half_size)
                     x2, y2 = int(center[0] + half_size), int(center[1] + half_size)
-
                     x1, y1 = max(0, x1), max(0, y1)
                     x2, y2 = min(frame.shape[1], x2), min(frame.shape[0], y2)
-
                     cropped_frame = frame[y1:y2, x1:x2]
-                    
                     resized_frame = cv2.resize(cropped_frame, 
                                                (config['preprocessing']['frame_size'], config['preprocessing']['frame_size']))
-                    
-                    cv2.imwrite(os.path.join(aligned_frames_dir, f"{i:04d}.jpg"), 
+                    cv2.imwrite(os.path.join(final_frames_dir, f"{i:04d}.jpg"), 
                                 cv2.cvtColor(resized_frame, cv2.COLOR_RGB2BGR))
             except Exception as e:
                 print(f"An error occurred while processing {video_frame_dir}: {e}")
                 continue
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default='configs/preprocess_config.yaml', help='Path to the config file.')
-    args = parser.parse_args()
-
-    with open(args.config, 'r') as f:
+    # Load configuration from YAML file
+    config_path = 'configs/preprocess_config.yaml'
+    print(f"Loading configuration from: {config_path}")
+    with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
-    print("--- Starting Final Extraction & Alignment Step ---")
+    # Run the final processing pipeline
+    print("--- Starting Step 2: Final Audio Extraction & Face Alignment ---")
     process_videos(config)
-    print("--- Processing Complete. You can now delete the original dataset. ---")
+    print("--- Step 2 Complete ---")
+    print("\n\n!! PREPROCESSING FINISHED !!")
+    print(f"Your final, self-contained dataset is located at: {config['path']['preprocessed_path']}")
+    print("You can now safely delete the original GRID dataset and the temporary raw frames directory.")
