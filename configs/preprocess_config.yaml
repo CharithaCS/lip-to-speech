@@ -1,0 +1,24 @@
+# -------------------
+# Data Paths
+# -------------------
+path:
+  # Path to the root of the GRID dataset snapshot
+  corpus_path: "C:/Users/PESU-RF/.cache/huggingface/hub/datasets--cap157--GRID_normal/snapshots/f9bf964fe4bbc1b48db3c0eeb73d24b0dd189f19"
+  
+  # !! EDIT THIS !! Path where the processed data will be saved
+  preprocessed_path: "C:/Users/PESU-RF/Documents/Please_dont_delete_capstone157/lip-to-speech/data/GRID_processed"
+
+# -------------------
+# Preprocessing Parameters
+# -------------------
+preprocessing:
+  audio:
+    sampling_rate: 16000
+  video:
+    frame_size: 160      # Final resolution of all cropped frames (e.g., 160x160)
+    crop_scale: 1.5      # Bounding box scale. >1.0 captures more context (cheeks, chin).
+
+# -------------------
+# Hardware Configuration
+# -------------------
+device: "cuda" # Use "cuda" for your RTX 4090, or "cpu" for testing
