@@ -1,9 +1,14 @@
+certifi==2025.7.14
+charset-normalizer==3.4.2
 colorama==0.4.6
 face-alignment==1.4.1
 ffmpeg-python==0.2.0
 filelock==3.13.1
 fsspec==2024.6.1
 future==1.0.0
+hf_transfer==0.1.9
+huggingface-hub==0.34.1
+idna==3.10
 imageio==2.37.0
 Jinja2==3.1.4
 lazy_loader==0.4
@@ -17,6 +22,7 @@ opencv-python==4.12.0.88
 packaging==25.0
 pillow==11.0.0
 PyYAML==6.0.2
+requests==2.32.4
 scikit-image==0.25.2
 scipy==1.15.3
 sympy==1.13.1
@@ -26,3 +32,4 @@ torchaudio==2.5.1+cu121
 torchvision==0.20.1+cu121
 tqdm==4.67.1
 typing_extensions==4.12.2
+urllib3==2.5.0

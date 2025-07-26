@@ -6,10 +6,10 @@ path:
   corpus_path: "C:/Users/PESU-RF/.cache/huggingface/hub/datasets--cap157--GRID_normal/snapshots/f9bf964fe4bbc1b48db3c0eeb73d24b0dd189f19"
   
   # Temporary path for intermediate raw frames (WRITE, then DELETE)
-  raw_frames_path: "C:/Users/PESU-RF/Documents/Please_dont_delete_capstone157/lip-to-speech/data/GRID_raw_frames"
+  raw_frames_path: "C:/Users/PESU-RF/Documents/Please_dont_delete_capstone157/lip-to-speech/data/GRID_processed"
   
   # Final path for the aligned, processed data (WRITE and KEEP)
-  preprocessed_path: "C:/Users/PESU-RF/Documents/Please_dont_delete_capstone157/lip-to-speech/data/GRID_processed"
+  preprocessed_path: "C:/Users/PESU-RF/Documents/Please_dont_delete_capstone157/lip-to-speech/data/GRID_full_processed"
 
 preprocessing:
   device: 'cuda'
