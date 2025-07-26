@@ -9,7 +9,7 @@ def extract_frames(config):
     Extracts frames from all .mpg videos in the GRID corpus.
     """
     grid_dir = config['path']['corpus_path']
-    output_dir_base = config['path']['preprocessed_path']
+    output_dir_base = config['path']['raw_frames_path']
     
     # Structure of GRID: grid_dir/speaker/video/*.mpg
     video_files = glob.glob(os.path.join(grid_dir, "*", "*", "*.mpg"))
